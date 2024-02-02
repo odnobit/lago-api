@@ -19,12 +19,9 @@ module Events
       end
 
       validate_events
-
-      return result.validation_failure!(errors: result.errors) if result.errors.present?
-
       post_validate_events
-
       result
+
     end
 
     private
@@ -45,9 +42,11 @@ module Events
         event.properties = event_params[:properties] || {}
         event.metadata = metadata || {}
         event.timestamp = Time.zone.at(event_params[:timestamp] ? event_params[:timestamp].to_f : timestamp)
-
-        result.events.push(event)
-        result.errors = result.errors.merge({ index => event.errors.messages }) unless event.valid?
+        if event.valid?
+          result.events.push(event)
+        else
+          Rails.logger.warn("event with transaction_id #{event.transaction_id} validation error: #{event.errors.messages}")
+        end
       end
     end
 
